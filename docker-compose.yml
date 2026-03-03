@@ -1,0 +1,50 @@
+# ============================================
+# Fortune SaaS - Docker Compose 配置
+# 一键启动前后端
+# ============================================
+version: '3.8'
+
+services:
+  # 后端 API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fortune-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - DEBUG=true
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend:/app
+      - ./skills:/app/skills
+    restart: unless-stopped
+    networks:
+      - fortune-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fortune-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000/api/v1
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - fortune-network
+
+networks:
+  fortune-network:
+    driver: bridge
